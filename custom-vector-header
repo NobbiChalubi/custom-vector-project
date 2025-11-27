@@ -1,0 +1,146 @@
+#pragma once
+#ifndef CUSTOMVECTOR_H
+#define CUSTOMVECTOR_H
+
+#include <iostream>
+#include <vector>
+#include <initializer_list>
+#include <stdexcept>
+
+// Project: std::vector recreation including a few functions
+// Date started: 11/21/25
+// Date finished: 11/25/25
+/* Concepts learned : RAII, pointers and dereferencing, memory management, how memory works under the hood, constructors and destructors,
+templates, classes, static, private and public, move semantics, L and R values.*/
+
+template <typename T>
+class CustomVector {
+private:
+    T* ArrayPos = nullptr;
+    size_t size = 0;
+    size_t capacity = 0;
+public:
+
+    CustomVector(std::initializer_list<T> vector) {
+        int index = 0;
+        for (T value : vector) {
+            size += 1;
+            std::cout << "testing" << "\n";
+        }
+        capacity = size * 1.3;
+        T* array = new T[capacity];
+        for (T value : vector) {
+            array[index] = value;
+            ++index;
+        }
+        ArrayPos = array;
+        std::cout << ArrayPos << "\n";
+        std::cout << *ArrayPos << "\n";
+    }
+
+    //copy constructor
+    CustomVector(const CustomVector& other) {
+        this->size = other.size;
+        this->capacity = other.capacity;
+
+        T* array = new T[this->capacity];
+        for (int i = 0; i < other.size;++i) {
+            array[i] = *(other.ArrayPos+i);//array[i] = other.ArrayPos[i]; would also work since i made the [] operator
+        }
+        this->ArrayPos = array;
+        std::cout << "\n" << "copied" << "\n";
+
+    }
+
+    //move constructor for taking from another
+    CustomVector(CustomVector&& other) {
+        this->size = other.size;
+        this->capacity = other.capacity;
+        this->ArrayPos = other.ArrayPos;
+        other.ArrayPos = nullptr;
+        other.size = 0;
+        other.capacity = 0;
+        std::cout << "\n" << "moved" << "\n";
+    }
+
+    T* begin() const { //the * after data type literally means when what you return is dereferenced its this data type, only works with addresses
+        return ArrayPos;
+    }
+
+    T* end() const {
+        return ArrayPos + size;
+    }
+
+    size_t CoolSize() const {
+        return size;
+    }
+
+
+    bool CoolEmpty() const {
+        if (size == 0) { return true; }
+        else { return false; }
+    }
+
+    void CoolPushBack(T&& element) {
+        size += 1;//must increase size variable before setting the new pointer to array to size, if you do not and try to increase the size later and use the supposed last postion it wont work
+        if (size > capacity) {
+            capacity *= 1.5;
+            T* newArray = new T[capacity];
+            for (int i = 0; i < size - 1; ++i) {
+                newArray[i] = *(ArrayPos + i);
+            }
+            delete[] ArrayPos;
+            ArrayPos = newArray;
+        }
+        ArrayPos[size - 1] = element;
+    }
+
+    void CoolPopBack() {
+        if (size > 0) {
+            size -= 1;
+            T* newArray = new T[size];//makes pointer to data type T then makes that pointer point to a newly allocated array with size elements of type T
+            for (int i = 0; i < size; ++i) {
+                newArray[i] = *(ArrayPos + i);
+            }
+            delete[] ArrayPos;
+            ArrayPos = newArray;
+        }
+        else {
+            throw std::runtime_error("Out of range");
+        }
+    }
+
+
+    T& operator[](int index) {// used to use index pointer= array pos + index but we dont need to store the index pointer
+        if(index<size || 0>index){ return *(ArrayPos + index); }
+        else {
+            throw std::runtime_error("Out of range");
+        }
+    }
+
+    CustomVector&/*reference so we can change value of current object*/ operator=(const CustomVector&/*reference so we can change value of other*/ other) {
+        delete[] this->ArrayPos; //since it is already constructed there is a place on the heap allocated for array pos do we need to delete that also use [] since array
+        this->size = other.size;
+        this->capacity = other.capacity;
+
+        T* array = new T[this->capacity];
+        for (int i = 0; i < other.CoolSize(); ++i) {
+            array[i] = *(other.ArrayPos + i);//array[i] = other.ArrayPos[i]; would also work since i made the [] operator
+        }
+        this->ArrayPos = array;
+        std::cout << "\n" << "copied" << "\n";
+        return *this;//the * this is used to return the current object without it, it would just return a memory address since this is a pointer to the current object. If you 
+        //tried to return CustomVector it would try to return customvector class which wont compile you need to return object not type name the class is technically     a data type like int 
+    }
+
+    ~CustomVector() {
+        if (ArrayPos != nullptr) {
+            delete[] ArrayPos;
+            ArrayPos = nullptr;
+        }
+    }
+
+};
+
+#endif
+
